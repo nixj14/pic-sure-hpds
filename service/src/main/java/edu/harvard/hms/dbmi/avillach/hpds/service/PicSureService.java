@@ -37,13 +37,12 @@ import edu.harvard.hms.dbmi.avillach.hpds.crypto.Crypto;
 import edu.harvard.hms.dbmi.avillach.hpds.data.genotype.FileBackedByteIndexedInfoStore;
 import edu.harvard.hms.dbmi.avillach.hpds.data.phenotype.ColumnMeta;
 import edu.harvard.hms.dbmi.avillach.hpds.data.query.Query;
-import edu.harvard.hms.dbmi.avillach.hpds.data.query.ResultType;
 import edu.harvard.hms.dbmi.avillach.hpds.exception.ValidationException;
 import edu.harvard.hms.dbmi.avillach.hpds.processing.AbstractProcessor;
 import edu.harvard.hms.dbmi.avillach.hpds.processing.AsyncResult;
 import edu.harvard.hms.dbmi.avillach.hpds.processing.CountProcessor;
+import edu.harvard.hms.dbmi.avillach.hpds.processing.TimelineProcessor;
 import edu.harvard.hms.dbmi.avillach.hpds.processing.VariantListProcessor;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.VariantsOfInterestProcessor;
 
 @Path("PIC-SURE")
 @Produces("application/json")
@@ -53,6 +52,7 @@ public class PicSureService implements IResourceRS {
 		try {
 			countProcessor = new CountProcessor();
 			variantListProcessor = new VariantListProcessor();
+			timelineProcessor = new TimelineProcessor();
 		} catch (ClassNotFoundException | IOException e3) {
 			log.error("ClassNotFoundException or IOException caught: ", e3);
 		}
@@ -69,6 +69,8 @@ public class PicSureService implements IResourceRS {
 	private Logger log = Logger.getLogger(PicSureService.class);
 
 	private VariantListProcessor variantListProcessor;
+
+	private TimelineProcessor timelineProcessor;
 	
 	private CountProcessor countProcessor;
 
@@ -367,6 +369,10 @@ public class PicSureService implements IResourceRS {
 				
 				case VCF_EXCERPT : {
 					return Response.ok(variantListProcessor.runVcfExcerptQuery(incomingQuery)).build();
+				}
+				
+				case TIMELINE_DATA : {
+					return Response.ok(timelineProcessor.runTimelineQuery(incomingQuery)).build();
 				}
 				
 				default : {
