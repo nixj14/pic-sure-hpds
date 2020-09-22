@@ -1,5 +1,6 @@
 package edu.harvard.hms.dbmi.avillach.hpds.data.genotype.util;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -17,9 +18,6 @@ import org.apache.log4j.Logger;
 
 import com.google.common.cache.LoadingCache;
 
-import de.siegmar.fastcsv.reader.CsvContainer;
-import de.siegmar.fastcsv.reader.CsvReader;
-import de.siegmar.fastcsv.reader.CsvRow;
 import edu.harvard.hms.dbmi.avillach.hpds.data.genotype.VariantStore;
 import edu.harvard.hms.dbmi.avillach.hpds.data.phenotype.ColumnMeta;
 import edu.harvard.hms.dbmi.avillach.hpds.data.phenotype.PhenoCube;
@@ -50,11 +48,12 @@ public class ScrubPatientIds {
 		String[] oldPatientIds = variantStore.getPatientIds();
 		String[] newPatientIds = new String[oldPatientIds.length];
 		
-		CsvReader reader = new CsvReader();
-		CsvContainer csv = reader.read(new FileReader("/opt/local/hpds/patientIdsToKeep.csv"));
+		BufferedReader reader = new BufferedReader(new FileReader("/opt/local/hpds/patientIdsToKeep.csv"));
 		HashSet<String> idsToKeep = new HashSet<String>();
-		for(CsvRow row : csv.getRows()) {
-			idsToKeep.add(row.getField(0).trim());
+		String line = reader.readLine();
+		while(line!=null){
+			idsToKeep.add(line.trim());
+			line = reader.readLine();
 		}
 		for(int x = 0;x<oldPatientIds.length;x++) {
 			if(idsToKeep.contains(oldPatientIds[x].trim())) {
