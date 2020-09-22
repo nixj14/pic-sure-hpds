@@ -50,11 +50,11 @@ public class ScrubPatientIds {
 		CsvContainer csv = reader.read(new FileReader("/opt/local/hpds/patientIdsToKeep.csv"));
 		HashSet<String> idsToKeep = new HashSet<String>();
 		for(CsvRow row : csv.getRows()) {
-			idsToKeep.add(row.getField(0));
+			idsToKeep.add(row.getField(0).trim());
 		}
 		for(int x = 0;x<oldPatientIds.length;x++) {
-			if(idsToKeep.contains(oldPatientIds[x])) {
-				newPatientIds[x]=oldPatientIds[x];
+			if(idsToKeep.contains(oldPatientIds[x].trim())) {
+				newPatientIds[x]=oldPatientIds[x].trim();
 			}else {
 				newPatientIds[x] = "-1";
 			}
