@@ -13,6 +13,8 @@ import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.log4j.Logger;
+
 import com.google.common.cache.LoadingCache;
 
 import de.siegmar.fastcsv.reader.CsvContainer;
@@ -37,6 +39,8 @@ public class ScrubPatientIds {
 
 	private static final int TEXT_VALUE = 3;
 	
+	private static final Logger log = Logger.getLogger(ScrubPatientIds.class);
+	
 	public static void main(String[] args) throws ClassNotFoundException, FileNotFoundException, IOException {
 		
 		ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream("/opt/local/hpds/all/variantStore.javabin")));
@@ -55,8 +59,10 @@ public class ScrubPatientIds {
 		for(int x = 0;x<oldPatientIds.length;x++) {
 			if(idsToKeep.contains(oldPatientIds[x].trim())) {
 				newPatientIds[x]=oldPatientIds[x].trim();
+				log.info("Keeping  : " + oldPatientIds[x]);
 			}else {
 				newPatientIds[x] = "-1";
+				log.info("Scrubbing  :  " + oldPatientIds[x]);
 			}
 		}
 		variantStore.setPatientIds(newPatientIds);
