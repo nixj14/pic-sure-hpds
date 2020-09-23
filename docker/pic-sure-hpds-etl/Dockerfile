@@ -7,6 +7,7 @@ ADD SQLLoader-jar-with-dependencies.jar .
 ADD CSVLoader-jar-with-dependencies.jar .
 ADD CSVDumper-jar-with-dependencies.jar .
 ADD ScrubPatientIds-jar-with-dependencies.jar .
+ADD HideAnnotationCategoryValue-jar-with-dependencies.jar .
 ADD VCFLocalLoader-jar-with-dependencies.jar .
 ADD UnifiedVCFLocalLoader-jar-with-dependencies.jar .
 
