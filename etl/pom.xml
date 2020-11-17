@@ -217,7 +217,7 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>buildScrubPatientIds</id>
+						<id>buildHideAnnotationCategoryValue</id>
 						<configuration>
 							<archive>
 								<manifest>
