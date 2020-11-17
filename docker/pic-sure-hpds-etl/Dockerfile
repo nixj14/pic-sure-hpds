@@ -11,5 +11,5 @@ ADD HideAnnotationCategoryValue-jar-with-dependencies.jar .
 ADD VCFLocalLoader-jar-with-dependencies.jar .
 ADD UnifiedVCFLocalLoader-jar-with-dependencies.jar .
 
-ENTRYPOINT java -Xmx${HEAPSIZE:-2048}m -jar ${LOADER_NAME:-CSVLoader}-jar-with-dependencies.jar 
+ENTRYPOINT java $JAVA_OPTS -Xmx${HEAPSIZE:-2048}m -jar ${LOADER_NAME:-CSVLoader}-jar-with-dependencies.jar 
 
