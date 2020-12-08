@@ -89,9 +89,10 @@ public abstract class AbstractProcessor {
 					}
 				}else {
 					try (ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream(BucketIndexBySample.INDEX_FILE)));){
+						log.info("Attempting to read bucket index");
 						bucketIndex = (BucketIndexBySample) objectInputStream.readObject();
 					} catch (IOException | ClassNotFoundException e) {
-						log.error(e);
+						log.error("Unable to read BucketIndexBySample", e);
 					} 
 				}
 			}
