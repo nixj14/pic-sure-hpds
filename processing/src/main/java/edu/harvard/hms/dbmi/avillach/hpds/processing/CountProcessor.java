@@ -5,19 +5,32 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Logger;
+
 import com.google.common.collect.Sets;
 
 import edu.harvard.hms.dbmi.avillach.hpds.data.query.Query;
+import edu.harvard.hms.dbmi.avillach.hpds.data.query.Query.VariantInfoFilter;
 import edu.harvard.hms.dbmi.avillach.hpds.exception.NotEnoughMemoryException;
 
 public class CountProcessor extends AbstractProcessor { 
 
+	Logger log = Logger.getLogger(CountProcessor.class);
+
 	public CountProcessor() throws ClassNotFoundException, FileNotFoundException, IOException {
 		super();
+	}
+
+	public CountProcessor(boolean isOnlyForTests) throws ClassNotFoundException, FileNotFoundException, IOException  {
+		super(true);
+		if(!isOnlyForTests) {
+			throw new IllegalArgumentException("This constructor should never be used outside tests");
+		}
 	}
 
 	/**
@@ -77,17 +90,22 @@ public class CountProcessor extends AbstractProcessor {
 	}
 
 	/**
-	 * To be implemented for ALS-113
+	 * Process only variantInfoFilters to count the number of variants that would be included in evaluating the query.
 	 * 
-	 * The incomingQuery is a normal query, the same as COUNT result type.
-	 * 
-	 * This should not actually do any filtering based on bitmasks, just INFO columns.
+	 * This does not actually evaluate a patient set for the query.
 	 * 
 	 * @param incomingQuery
 	 * @return the number of variants that would be used to filter patients if the incomingQuery was run as a COUNT query.
 	 */
-	public int runVariantCount(Query incomingQuery) {
-		throw new RuntimeException("Not yet implemented");
+	public Map<String, Object> runVariantCount(Query query) {
+		TreeMap<String, Object> response = new TreeMap<String, Object>();
+		if(query.variantInfoFilters != null && !query.variantInfoFilters.isEmpty()) {
+			response.put("count", getVariantList(query).size());
+			response.put("message", "Query ran successfully");
+		} else {
+			response.put("count", "0");
+			response.put("message", "No variant filters were supplied, so no query was run.");
+		}
+		return response;
 	}
-
 }

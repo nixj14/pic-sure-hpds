@@ -1,20 +1,11 @@
 package edu.harvard.hms.dbmi.avillach.hpds.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.ServerErrorException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -38,11 +29,7 @@ import edu.harvard.hms.dbmi.avillach.hpds.data.genotype.FileBackedByteIndexedInf
 import edu.harvard.hms.dbmi.avillach.hpds.data.phenotype.ColumnMeta;
 import edu.harvard.hms.dbmi.avillach.hpds.data.query.Query;
 import edu.harvard.hms.dbmi.avillach.hpds.exception.ValidationException;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.AbstractProcessor;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.AsyncResult;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.CountProcessor;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.TimelineProcessor;
-import edu.harvard.hms.dbmi.avillach.hpds.processing.VariantListProcessor;
+import edu.harvard.hms.dbmi.avillach.hpds.processing.*;
 
 @Path("PIC-SURE")
 @Produces("application/json")
@@ -51,6 +38,7 @@ public class PicSureService implements IResourceRS {
 	public PicSureService() {
 		try {
 			countProcessor = new CountProcessor();
+			timelineProcessor = new TimelineProcessor();
 			variantListProcessor = new VariantListProcessor();
 			timelineProcessor = new TimelineProcessor();
 		} catch (ClassNotFoundException | IOException e3) {
@@ -68,12 +56,15 @@ public class PicSureService implements IResourceRS {
 
 	private Logger log = Logger.getLogger(PicSureService.class);
 
-	private VariantListProcessor variantListProcessor;
-
 	private TimelineProcessor timelineProcessor;
 	
 	private CountProcessor countProcessor;
 
+	private VariantListProcessor variantListProcessor;
+	
+	private static final String QUERY_METADATA_FIELD = "queryResultMetadata";
+	
+	
 	@POST
 	@Path("/info")
 	public ResourceInfo info(QueryRequest request) {
@@ -235,11 +226,10 @@ public class PicSureService implements IResourceRS {
 				} catch (JsonProcessingException e2) {
 					log.error("JsonProcessingException  caught: ", e);
 				}
-				try {
-					status.setResultMetadata(mapper.writeValueAsBytes(e.getResult()));
-				} catch (JsonProcessingException e1) {
-					throw new ServerErrorException(500);
-				}
+					 
+		        Map<String, Object> metadata = new HashMap<String, Object>();
+		        metadata.put(QUERY_METADATA_FIELD, e.getResult());
+		        status.setResultMetadata(metadata);
 				return status;
 			} catch (ClassNotFoundException e) {
 				throw new ServerErrorException(500);
@@ -256,18 +246,6 @@ public class PicSureService implements IResourceRS {
 		return mapper.readValue(mapper.writeValueAsString(queryJson.getQuery()), Query.class);
 	}
 
-	private QueryStatus unknownResultTypeQueryStatus() {
-		QueryStatus status = new QueryStatus();
-		status.setDuration(0);
-		status.setExpiration(-1);
-		status.setPicsureResultId(null);
-		status.setResourceID(null);
-		status.setResourceResultId(null);
-		status.setResourceStatus("Unsupported result type");
-		status.setStatus(PicSureStatus.ERROR);
-		return status;
-	}
-
 	private QueryStatus convertToQueryStatus(AsyncResult entity) {
 		QueryStatus status = new QueryStatus();
 		status.setDuration(entity.completedTime==0?0:entity.completedTime - entity.queuedTime);
@@ -279,14 +257,6 @@ public class PicSureService implements IResourceRS {
 		}
 		status.setStartTime(entity.queuedTime);
 		status.setStatus(entity.status.toPicSureStatus());
-		return status;
-	}
-
-	private QueryStatus convertToQueryStatus(int count) {
-		QueryStatus status = new QueryStatus();
-		status.setResourceStatus("COMPLETE");
-		status.setResultMetadata((""+count).getBytes());
-		status.setStatus(PicSureStatus.AVAILABLE);
 		return status;
 	}
 
@@ -307,6 +277,17 @@ public class PicSureService implements IResourceRS {
 			QueryRequest request) {
 		return convertToQueryStatus(
 				queryService.getStatusFor(queryId));
+	}
+	
+	@POST
+	@Path("/query/format")
+	public Response queryFormat(QueryRequest resultRequest) {
+		try {
+			//The toString() method here has been overridden to produce a human readable value
+			return Response.ok().entity(convertIncomingQuery(resultRequest).toString()).build();
+		} catch (IOException e) {
+			return Response.ok().entity("An error occurred formatting the query for display: " + e.getLocalizedMessage()).build();
+		}
 	}
 
 	@POST
@@ -331,16 +312,7 @@ public class PicSureService implements IResourceRS {
 					return Response.ok(infoStores, MediaType.APPLICATION_JSON_VALUE).build();
 				}
 				
-				case DATAFRAME : {
-					QueryStatus status = query(resultRequest);
-					while(status.getResourceStatus().equalsIgnoreCase("RUNNING")||status.getResourceStatus().equalsIgnoreCase("PENDING")) {
-						status = queryStatus(status.getResourceResultId(), null);
-					}
-					log.info(status.toString());
-					return queryResult(status.getResourceResultId(), null);
-					
-				}
-				
+				case DATAFRAME : 
 				case DATAFRAME_MERGED : {
 					QueryStatus status = query(resultRequest);
 					while(status.getResourceStatus().equalsIgnoreCase("RUNNING")||status.getResourceStatus().equalsIgnoreCase("PENDING")) {
@@ -360,7 +332,7 @@ public class PicSureService implements IResourceRS {
 				}
 				
 				case VARIANT_COUNT_FOR_QUERY : {
-					return Response.ok(countProcessor.runVariantCount(incomingQuery)).build();
+					return Response.ok(countProcessor.runVariantCount(incomingQuery)).header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON).build();
 				}
 				
 				case VARIANT_LIST_FOR_QUERY : {
